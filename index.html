@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PEWGF Trainer</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- Calibration Modal -->
+    <div id="calibrationModal" class="modal modal--active">
+      <div class="modal-content">
+        <h1>PEWGF Trainer</h1>
+        <h2>Select Button 2</h2>
+        <p id="calibrationStatus" class="calibration-status">Press any key to use as BUTTON 2</p>
+        <div class="metronome-visual" id="metronomeVisual"></div>
+        <p class="calibration-hint">This key will trigger attacks. Can use any key.</p>
+        <button id="skipCalibrationButton" class="button button--secondary">Use Spacebar</button>
+      </div>
+    </div>
+    
+    <!-- Header -->
+    <header class="header" id="header" style="display: none;">
+      <div class="header-left">
+        <h1 class="header-title">PEWGF Trainer</h1>
+      </div>
+      <div class="header-right">
+        <span id="deviceIndicator" class="device-indicator"></span>
+      </div>
+    </header>
+    
+    <!-- Main Practice Area -->
+    <main class="practice-area" id="practiceArea" style="display: none;">
+      
+      <!-- Input Timeline -->
+      <section class="timeline-section">
+        <div class="timeline-container">
+          <div id="inputTimeline" class="input-timeline">
+            <div class="timeline-inputs">
+              <div class="timeline-input" data-index="0" data-direction="">
+                <span class="timeline-label">-</span>
+              </div>
+              <div class="timeline-input" data-index="1" data-direction="">
+                <span class="timeline-label">-</span>
+              </div>
+              <div class="timeline-input" data-index="2" data-direction="">
+                <span class="timeline-label">-</span>
+              </div>
+              <div class="timeline-input" data-index="3" data-direction="">
+                <span class="timeline-label">-</span>
+              </div>
+            </div>
+            
+            <div class="timeline-gap-indicator">
+              <div class="gap-bar"></div>
+              <div class="gap-label" id="gapLabel"></div>
+            </div>
+            
+            <div class="timeline-button">
+              <span class="timeline-label">2</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Result Overlay -->
+      <section class="result-section">
+        <div id="resultOverlay" class="result-overlay">
+          <div class="result-label" id="resultLabel"></div>
+          <div class="result-delta" id="resultDelta"></div>
+        </div>
+      </section>
+      
+      <!-- Stats Panel -->
+      <section class="stats-section">
+        <div class="stats-panel">
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-label">Total</div>
+              <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">EWGF</div>
+              <div class="stat-value" id="statEWGF">0</div>
+              <div class="stat-percent" id="statEWGFPercent">0%</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">PEWGF</div>
+              <div class="stat-value" id="statPEWGF">0</div>
+              <div class="stat-percent" id="statPEWGFPercent">0%</div>
+            </div>
+          </div>
+          
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-label">Avg Δt</div>
+              <div class="stat-value" id="statAvgDelta">0ms</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Std Dev</div>
+              <div class="stat-value" id="statStdDev">0ms</div>
+            </div>
+          </div>
+          
+          <div class="progress-bar-container">
+            <div class="progress-label">Last 10:</div>
+            <div id="progressBars" class="progress-bars"></div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Footer Instructions -->
+      <footer class="footer">
+        <p id="footerInstructions">Press f, n, d, d/f + 2</p>
+        <div class="footer-buttons">
+          <button id="resetButton" class="button button--secondary">Reset</button>
+          <button id="settingsButton" class="button button--secondary">Settings</button>
+        </div>
+      </footer>
+      
+    </main>
+    
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/inputHandler.js"></script>
+  <script src="js/inputBuffer.js"></script>
+  <script src="js/sequenceRecognizer.js"></script>
+  <script src="js/timingClassifier.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/calibration.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

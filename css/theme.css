@@ -1,0 +1,62 @@
+:root {
+  /* Colors */
+  --color-bg: #0f1419;
+  --color-surface: #1a1f26;
+  --color-surface-alt: #252c36;
+  --color-text-primary: #e8e9eb;
+  --color-text-secondary: #8a8d93;
+  --color-border: #2d3139;
+
+  --color-success: #4ade80;
+  --color-perfect: #60a5fa;
+  --color-neutral: #fbbf24;
+  --color-error: #ef4444;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Typography */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 48px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+}
+
+html, body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+h1 {
+  font-size: var(--font-size-2xl);
+}
+
+h2 {
+  font-size: var(--font-size-xl);
+}
+
+h3 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  color: var(--color-text-secondary);
+}
