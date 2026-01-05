@@ -26,7 +26,7 @@ class FrameLogger {
     const frameNumber = this.timestampToFrame(timestamp);
     
     if (!this.frameMap.has(frameNumber)) {
-      this.frameMap.set(frameNumber, { frameNumber, directions: [], buttons: [] });
+      this.frameMap.set(frameNumber, { frameNumber, directions: [], buttons: [], timestamp });
     }
     
     const frame = this.frameMap.get(frameNumber);
@@ -42,7 +42,7 @@ class FrameLogger {
     const frameNumber = this.timestampToFrame(timestamp);
     
     if (!this.frameMap.has(frameNumber)) {
-      this.frameMap.set(frameNumber, { frameNumber, directions: [], buttons: [] });
+      this.frameMap.set(frameNumber, { frameNumber, directions: [], buttons: [], timestamp });
     }
     
     const frame = this.frameMap.get(frameNumber);

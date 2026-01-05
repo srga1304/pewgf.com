@@ -171,22 +171,23 @@ class PEWGFTrainer {
     
     let finalMoveType = classification.type;
 
-    // Calculate delta: difference between DF frame and button2 frame in milliseconds
+    // Calculate delta: difference between DF timestamp and button2 timestamp
     let finalDelta = 0;
     if (timeline.length >= 2) {
-      const lastFrame = timeline[timeline.length - 1]; // Last frame with button2
+      const button2Frame = timeline[timeline.length - 1]; // Last frame with button2
+      const button2Timestamp = button2Frame.timestamp;
+      
       // Find the DF direction frame
-      let dfFrame = -1;
+      let dfTimestamp = -1;
       for (let i = timeline.length - 1; i >= 0; i--) {
         if (timeline[i].directions.includes('d/f')) {
-          dfFrame = timeline[i].frameNumber;
+          dfTimestamp = timeline[i].timestamp;
           break;
         }
       }
-      if (dfFrame >= 0) {
-        // Calculate frame difference in milliseconds
-        const frameDiff = lastFrame.frameNumber - dfFrame;
-        finalDelta = frameDiff * CONSTANTS.FPS_60_FRAME_MS;
+      if (dfTimestamp >= 0) {
+        // Calculate actual time difference in milliseconds
+        finalDelta = button2Timestamp - dfTimestamp;
       }
     }
 
