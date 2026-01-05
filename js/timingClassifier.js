@@ -1,16 +1,25 @@
 class TimingClassifier {
   constructor() {
     this.lastClassification = null;
+    
+    // Timing windows per spec
+    this.TIMING_WINDOWS = {
+      PEWGF_MIN: 11.67,    // 11.67 ms
+      PEWGF_MAX: 21.67,    // 21.67 ms
+      EWGF_MIN: 5.84,      // 5.84 ms
+      EWGF_MAX: 27.5,      // 27.5 ms
+      WGF_THRESHOLD: 27.5  // > 27.5 ms
+    };
   }
 
   /**
    * Classify based on delta between d/f and button 2
    * Returns { type, delta, frames }
    */
-  classify(d_f_timestamp, button2_timestamp) {
+  classify(d_f_timestamp, button2_timestamp, motionType) {
     if (!d_f_timestamp || !button2_timestamp) {
       return {
-        type: CONSTANTS.TYPES.MISS, // Should be handled as a motion error, but fallback
+        type: CONSTANTS.TYPES.MISS,
         delta: 0,
         frames: 0
       };
@@ -20,12 +29,24 @@ class TimingClassifier {
     const frames = Timing.deltaToFrames(delta);
     let type;
 
+    // Classification logic based on timing windows
     if (delta < 0) {
-      type = CONSTANTS.TYPES.EARLY; // Button pressed before d/f
-    } else if (delta < CONSTANTS.JUST_FRAME_WINDOW_MS) {
-      type = CONSTANTS.TYPES.JUST_FRAME; // Pressed within the same frame
+      // Button pressed BEFORE d/f
+      type = CONSTANTS.TYPES.MISS;
+    } else if (delta < this.TIMING_WINDOWS.EWGF_MIN) {
+      // Too early (before EWGF window)
+      type = CONSTANTS.TYPES.MISS;
+    } else if (delta >= this.TIMING_WINDOWS.PEWGF_MIN && delta <= this.TIMING_WINDOWS.PEWGF_MAX) {
+      // PEWGF window (tightest, 11.67-21.67 ms)
+      type = CONSTANTS.TYPES.PEWGF;
+    } else if (delta >= this.TIMING_WINDOWS.EWGF_MIN && delta <= this.TIMING_WINDOWS.EWGF_MAX) {
+      // EWGF window (5.84-27.5 ms, includes PEWGF)
+      type = CONSTANTS.TYPES.EWGF;
+    } else if (delta > this.TIMING_WINDOWS.WGF_THRESHOLD) {
+      // WGF (too late, > 27.5 ms)
+      type = CONSTANTS.TYPES.WGF;
     } else {
-      type = CONSTANTS.TYPES.LATE; // Pressed after the just frame window
+      type = CONSTANTS.TYPES.MISS;
     }
 
     this.lastClassification = {

@@ -6,6 +6,7 @@ class PEWGFTrainer {
     this.inputBuffer = new InputBuffer();
     this.sequenceRecognizer = new SequenceRecognizer();
     this.timingClassifier = new TimingClassifier();
+    this.inputHistory = new InputHistory();
     this.calibration = new CalibrationRoutine(this.ui);
 
     this.isTraining = false;
@@ -114,9 +115,16 @@ class PEWGFTrainer {
     const { direction, timestamp } = event;
     this.inputBuffer.addDirection(direction, timestamp);
 
+    // Record in input history
+    this.inputHistory.recordDirection(direction, timestamp);
+
     // Update UI timeline
     const sequence = this.inputBuffer.getSequence();
     this.ui.updateTimeline(sequence);
+    
+    // Update history display
+    const merged = this.inputHistory.getMergedHistory();
+    this.ui.updateHistory(merged.slice(-30));
   }
 
   /**
@@ -134,6 +142,14 @@ class PEWGFTrainer {
     const { timestamp: button2_timestamp } = event;
     this.inputBuffer.recordButton2(button2_timestamp);
 
+    // Get d/f timestamp for delta display
+    const d_f_ts = this.inputBuffer.getLastDownForward();
+    
+    // Record button 2 in input history
+    this.inputHistory.recordButton2(button2_timestamp, d_f_ts);
+    const merged = this.inputHistory.getMergedHistory();
+    this.ui.updateHistory(merged.slice(-30));
+
     const bufferState = this.inputBuffer.getState();
     const recognition = this.sequenceRecognizer.recognizeSequenceFromBuffer(bufferState);
 
@@ -143,24 +159,9 @@ class PEWGFTrainer {
     if (recognition.detected && recognition.d_f_timestamp) {
       const { type: motionType, d_f_timestamp } = recognition;
       
-      const timing = this.timingClassifier.classify(d_f_timestamp, button2_timestamp);
+      const timing = this.timingClassifier.classify(d_f_timestamp, button2_timestamp, motionType);
       finalDelta = timing.delta;
-
-      // Determine final move type based on motion and timing
-      switch (timing.type) {
-        case CONSTANTS.TYPES.JUST_FRAME:
-          finalMoveType = (motionType === CONSTANTS.TYPES.PEWGF_MOTION)
-            ? CONSTANTS.TYPES.PEWGF
-            : CONSTANTS.TYPES.EWGF;
-          break;
-        case CONSTANTS.TYPES.LATE:
-          finalMoveType = CONSTANTS.TYPES.WGF;
-          break;
-        case CONSTANTS.TYPES.EARLY:
-        default:
-          finalMoveType = CONSTANTS.TYPES.MISS;
-          break;
-      }
+      finalMoveType = timing.type;
     }
 
     // Show result in UI
@@ -192,6 +193,8 @@ class PEWGFTrainer {
   handleResetStats() {
     if (confirm('Reset all statistics?')) {
       this.state.resetStats();
+      this.inputHistory.clear();
+      this.ui.updateHistory([]);
       this.updateUI();
     }
   }

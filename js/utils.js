@@ -1,7 +1,11 @@
 // Constants
 const CONSTANTS = {
-  // Input timing windows (ms)
-  JUST_FRAME_WINDOW_MS: 1000 / 60, // 16.67ms, the window for a 'just frame' input
+  // Input timing windows (ms) - per specification
+  PEWGF_THRESHOLD_MIN: 11.67,  // PEWGF lower bound
+  PEWGF_THRESHOLD_MAX: 21.67,  // PEWGF upper bound
+  EWGF_THRESHOLD_MIN: 5.84,    // EWGF lower bound
+  EWGF_THRESHOLD_MAX: 27.5,    // EWGF upper bound
+  WGF_THRESHOLD_MIN: 27.5,     // WGF lower bound
 
   // Frame reference
   FPS_60_FRAME_MS: 1000 / 60, // 16.67ms

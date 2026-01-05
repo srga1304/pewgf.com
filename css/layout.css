@@ -35,12 +35,174 @@
 .practice-area {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--space-xl);
   padding: var(--space-xl);
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* History Panel */
+.history-panel {
+  width: 220px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow-y: auto;
+  max-height: 600px;
+  flex-shrink: 0;
+}
+
+.history-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-panel::-webkit-scrollbar-thumb {
+  background: var(--color-text-secondary);
+  border-radius: 3px;
+}
+
+.history-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-primary);
+}
+
+.history-header {
+  position: sticky;
+  top: 0;
+  background-color: var(--color-surface-alt);
+  padding: 0 0 var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-sm);
+}
+
+.history-header h3 {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  padding: var(--space-xl) var(--space-sm);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.history-item {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 5px 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  cursor: default;
+  transition: all 0.15s ease;
+}
+
+.history-item:hover {
+  border-color: var(--color-text-primary);
+  background-color: var(--color-surface);
+}
+
+.history-item.history-direction {
+  border-left: 3px solid var(--color-text-primary);
+}
+
+.history-item.history-button {
+  border-left: 3px solid var(--color-text-primary);
+}
+
+.history-item.history-combined {
+  border-left: 3px solid var(--color-accent, #00ff00);
+  background-color: rgba(0, 255, 0, 0.03);
+}
+
+.history-input-symbol {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  font-family: Arial, sans-serif;
+  line-height: 1;
+}
+
+.history-input-symbol:hover {
+  opacity: 0.7;
+  cursor: help;
+}
+
+.history-input-symbol.history-neutral {
+  color: var(--color-text-secondary);
+  min-width: 4px;
+  opacity: 0;
+}
+
+.history-button-symbol {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.history-button-in-combined {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: -1px;
+}
+
+.history-frame-num {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  min-width: 26px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.history-frame-subtle {
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.history-delta-info {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Main content wrapper */
+.practice-area-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
 }
 
 /* Timeline Section */
@@ -145,10 +307,44 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .practice-area {
+    max-width: 100%;
+  }
+
+  .history-panel {
+    width: 150px;
+    max-height: 400px;
+  }
+}
+
 @media (max-width: 768px) {
   .practice-area {
+    flex-direction: column;
     gap: var(--space-lg);
     padding: var(--space-lg);
+  }
+
+  .history-panel {
+    width: 100%;
+    max-height: 200px;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .history-list {
+    flex-direction: row;
+    gap: var(--space-md);
+  }
+
+  .history-item {
+    flex-shrink: 0;
+    min-width: 120px;
+  }
+
+  .practice-area-main {
+    width: 100%;
   }
 
   .modal-content {

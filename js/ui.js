@@ -51,6 +51,10 @@ class UI {
       statStdDev: DOM.query('#statStdDev'),
       progressBars: DOM.query('#progressBars'),
 
+      // History panel
+      historyPanel: DOM.query('#historyPanel'),
+      historyList: DOM.query('#historyList'),
+
       // Footer
       footerInstructions: DOM.query('#footerInstructions'),
       resetButton: DOM.query('#resetButton'),
@@ -318,6 +322,104 @@ class UI {
   }
 
   /**
+   * Update input history display
+   */
+  updateHistory(historyEntries) {
+    const container = this.elements.historyList;
+    DOM.setHTML(container, '');
+
+    if (!historyEntries || historyEntries.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'history-empty';
+      DOM.setText(emptyMsg, 'No inputs yet');
+      container.appendChild(emptyMsg);
+      return;
+    }
+
+    // Display all entries (up to 30 recent)
+    historyEntries.forEach((entry, index) => {
+      const item = this.createHistoryItem(entry, index);
+      container.appendChild(item);
+    });
+  }
+
+  /**
+   * Create a single history item element
+   */
+  createHistoryItem(entry, index) {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    if (entry.type === 'button2' && !entry.isCombined) {
+      DOM.addClass(item, 'history-button');
+
+      // Button 2 card layout
+      const inputDisplay = document.createElement('span');
+      inputDisplay.className = 'history-input-symbol history-button-symbol';
+      DOM.setText(inputDisplay, '2');
+
+      const frameDisplay = document.createElement('span');
+      frameDisplay.className = 'history-frame-num';
+      DOM.setText(frameDisplay, entry.displayFrame);
+
+      item.appendChild(inputDisplay);
+      item.appendChild(frameDisplay);
+
+      // Add delta timing if available
+      if (entry.deltaDisplay) {
+        const deltaDisplay = document.createElement('span');
+        deltaDisplay.className = 'history-delta-info';
+        DOM.setText(deltaDisplay, entry.deltaDisplay);
+        item.appendChild(deltaDisplay);
+      }
+    } else {
+      // Direction input (or combined d/f+2)
+      DOM.addClass(item, 'history-direction');
+      
+      if (entry.isCombined) {
+        DOM.addClass(item, 'history-combined');
+      }
+
+      const inputDisplay = document.createElement('span');
+      inputDisplay.className = 'history-input-symbol';
+      
+      // Empty string for neutral = visual blank
+      if (entry.input === '') {
+       inputDisplay.className += ' history-neutral';
+      DOM.setText(inputDisplay, '');
+      } else {
+       DOM.setText(inputDisplay, entry.input);
+       // Add title attribute for tooltip showing letter
+       inputDisplay.title = entry.symbol;
+      }
+
+      const frameDisplay = document.createElement('span');
+      frameDisplay.className = 'history-frame-num history-frame-subtle';
+      DOM.setText(frameDisplay, entry.displayFrame);
+
+      item.appendChild(inputDisplay);
+      item.appendChild(frameDisplay);
+      
+      // Add button 2 symbol and delta if combined
+      if (entry.isCombined) {
+        const buttonSymbol = document.createElement('span');
+        buttonSymbol.className = 'history-button-in-combined';
+        DOM.setText(buttonSymbol, '+2');
+        item.appendChild(buttonSymbol);
+        
+        if (entry.deltaDisplay) {
+          const deltaDisplay = document.createElement('span');
+          deltaDisplay.className = 'history-delta-info';
+          DOM.setText(deltaDisplay, entry.deltaDisplay);
+          item.appendChild(deltaDisplay);
+        }
+      }
+    }
+
+    return item;
+  }
+
+  /**
    * Cleanup
    */
   destroy() {
@@ -325,4 +427,4 @@ class UI {
       clearTimeout(this.resultDisplayTimeout);
     }
   }
-}
+  }

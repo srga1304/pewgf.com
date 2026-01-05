@@ -37,6 +37,19 @@
     <!-- Main Practice Area -->
     <main class="practice-area" id="practiceArea" style="display: none;">
       
+      <!-- History Panel (Left Column) -->
+      <aside class="history-panel" id="historyPanel">
+        <div class="history-header">
+          <h3>Attempt History</h3>
+        </div>
+        <div class="history-list" id="historyList">
+          <!-- Dynamically populated -->
+        </div>
+      </aside>
+      
+      <!-- Main Content -->
+      <div class="practice-area-main">
+      
       <!-- Input Timeline -->
       <section class="timeline-section">
         <div class="timeline-container">
@@ -123,6 +136,7 @@
         </div>
       </footer>
       
+      </div>
     </main>
     
   </div>
@@ -134,6 +148,7 @@
   <script src="js/inputBuffer.js"></script>
   <script src="js/sequenceRecognizer.js"></script>
   <script src="js/timingClassifier.js"></script>
+  <script src="js/inputHistory.js"></script>
   <script src="js/stats.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/calibration.js"></script>
