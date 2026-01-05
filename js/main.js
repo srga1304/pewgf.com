@@ -6,6 +6,8 @@ class PEWGFTrainer {
     this.inputBuffer = new InputBuffer();
     this.sequenceRecognizer = new SequenceRecognizer();
     this.timingClassifier = new TimingClassifier();
+    this.frameLogger = new FrameLogger();
+    this.windGodClassifier = new WindGodClassifier();
     this.inputHistory = new InputHistory();
     this.calibration = new CalibrationRoutine(this.ui);
 
@@ -103,6 +105,8 @@ class PEWGFTrainer {
     this.state.setMode(CONSTANTS.MODES.PRACTICE);
     this.ui.setDeviceIndicator(this.state.device);
     this.ui.showPracticeArea();
+    // Reset frame logger for fresh attempt tracking
+    this.frameLogger.clear();
     this.updateUI();
   }
 
@@ -115,7 +119,10 @@ class PEWGFTrainer {
     const { direction, timestamp } = event;
     this.inputBuffer.addDirection(direction, timestamp);
 
-    // Record in input history
+    // Record in frame logger
+    this.frameLogger.recordDirection(direction, timestamp);
+
+    // Record in input history (for UI display)
     this.inputHistory.recordDirection(direction, timestamp);
 
     // Update UI timeline
@@ -140,29 +147,30 @@ class PEWGFTrainer {
     this.lastAttemptTime = now;
 
     const { timestamp: button2_timestamp } = event;
-    this.inputBuffer.recordButton2(button2_timestamp);
-
-    // Get d/f timestamp for delta display
-    const d_f_ts = this.inputBuffer.getLastDownForward();
     
-    // Record button 2 in input history
+    // Record button 2 in frame logger
+    this.frameLogger.recordButton2(button2_timestamp);
+    
+    // Record button 2 in input history (for UI display)
+    const d_f_ts = this.inputBuffer.getLastDownForward();
     this.inputHistory.recordButton2(button2_timestamp, d_f_ts);
     const merged = this.inputHistory.getMergedHistory();
     this.ui.updateHistory(merged.slice(-30));
 
-    const bufferState = this.inputBuffer.getState();
-    const recognition = this.sequenceRecognizer.recognizeSequenceFromBuffer(bufferState);
-
-    let finalMoveType = CONSTANTS.TYPES.MISS;
+    // Get frame-based timeline for classification
+    const timeline = this.frameLogger.getTimeline();
+    
+    // Debug: show timeline details
+    console.log('[MAIN] Timeline entries:');
+    timeline.forEach(f => {
+      console.log(`  Frame ${f.frameNumber}: dirs=[${f.directions.join(',')}] buttons=[${f.buttons.join(',')}]`);
+    });
+    
+    // Classify using frame-based logic
+    const classification = this.windGodClassifier.classify(timeline);
+    
+    let finalMoveType = classification.type;
     let finalDelta = 0;
-
-    if (recognition.detected && recognition.d_f_timestamp) {
-      const { type: motionType, d_f_timestamp } = recognition;
-      
-      const timing = this.timingClassifier.classify(d_f_timestamp, button2_timestamp, motionType);
-      finalDelta = timing.delta;
-      finalMoveType = timing.type;
-    }
 
     // Show result in UI
     const sequence = this.inputBuffer.getSequence();
@@ -172,11 +180,17 @@ class PEWGFTrainer {
     // Record attempt for stats
     this.state.recordAttempt({
       type: finalMoveType,
-      delta: finalDelta
+      delta: finalDelta,
+      frames: classification.totalFrames
     });
+
+    // Debug log
+    console.log(`[CLASSIFICATION] ${finalMoveType} | Frames: ${classification.totalFrames} | Confidence: ${classification.confidence}`);
+    console.log('Timeline:', timeline);
 
     // Clear for next attempt
     this.inputBuffer.clear();
+    this.frameLogger.clear();
   }
 
   /**

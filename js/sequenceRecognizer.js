@@ -6,6 +6,9 @@ class SequenceRecognizer {
   /**
    * Check if the given sequence matches target motion from buffer state
    * Returns { detected: bool, d_f_timestamp: number | null, matchIndex: number, type: string | null }
+   * 
+   * PEWGF and EWGF share the same motion sequence (f → n → d → d/f).
+   * They differ only by timing delta between d/f and button 2.
    */
   recognizeSequenceFromBuffer(bufferState) {
     if (!bufferState || !bufferState.directions || bufferState.directions.length === 0) {
@@ -14,25 +17,12 @@ class SequenceRecognizer {
 
     const directions = bufferState.directions;
 
-    // Check for EWGF sequence first (longest)
-    const ewgfMatch = this.findSequence(directions, EWGF_SEQUENCE);
-    if (ewgfMatch.detected) {
-      const d_f_timestamp = this.findDownForwardTimestamp(directions, ewgfMatch.matchIndex + 3);
-      return { ...ewgfMatch, d_f_timestamp, type: CONSTANTS.TYPES.EWGF_MOTION };
-    }
-
-    // Check for PEWGF sequence (f, n, d/f)
-    const pewgfMatch = this.findSequence(directions, PEWGF_SEQUENCE);
-    if (pewgfMatch.detected) {
-      const d_f_timestamp = this.findDownForwardTimestamp(directions, pewgfMatch.matchIndex + 2);
-      return { ...pewgfMatch, d_f_timestamp, type: CONSTANTS.TYPES.PEWGF_MOTION };
-    }
-
-    // Check for alternate PEWGF sequence (f, d, d/f)
-    const pewgfAltMatch = this.findSequence(directions, PEWGF_ALT_SEQUENCE);
-    if (pewgfAltMatch.detected) {
-      const d_f_timestamp = this.findDownForwardTimestamp(directions, pewgfAltMatch.matchIndex + 2);
-      return { ...pewgfAltMatch, d_f_timestamp, type: CONSTANTS.TYPES.PEWGF_MOTION };
+    // Check for main sequence (f → n → d → d/f)
+    const mainMatch = this.findSequence(directions, EWGF_SEQUENCE);
+    if (mainMatch.detected) {
+      const d_f_timestamp = this.findDownForwardTimestamp(directions, mainMatch.matchIndex + 3);
+      // Type will be determined by timing classifier, not here
+      return { ...mainMatch, d_f_timestamp, type: CONSTANTS.TYPES.EWGF_MOTION };
     }
     
     return { detected: false, d_f_timestamp: null, matchIndex: -1, type: null };

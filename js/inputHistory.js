@@ -82,20 +82,36 @@ class InputHistory {
 
   /**
    * Merge consecutive d/f and button2 entries that are in the same frame
+   * CRITICAL: DF and 2 must be in the same frame to be merged
    */
   getMergedHistory() {
     const merged = [];
+    const skipped = new Set();
     
     for (let i = 0; i < this.history.length; i++) {
+      if (skipped.has(i)) continue;
+      
       const current = this.history[i];
       
-      // If this is a button2 in the same frame as previous d/f, merge them
-      if (current.type === 'button2' && current.sameFrame && merged.length > 0) {
-        const last = merged[merged.length - 1];
-        if (last.type === 'direction' && last.direction === 'd/f' && last.frameNumber === current.frameNumber) {
-          // Merge: modify last entry to include button2 data
-          last.isCombined = true;
-          last.deltaDisplay = current.deltaDisplay;
+      // Check if next entry is button2 in same frame as current d/f
+      if (current.type === 'direction' && current.direction === 'd/f' && i + 1 < this.history.length) {
+        const next = this.history[i + 1];
+        
+        if (next.type === 'button2' && next.frameNumber === current.frameNumber) {
+          // MERGE: Create combined entry
+          const combined = {
+            type: 'direction',
+            input: current.input + '+2',  // ↘+2
+            symbol: 'd/f+2',
+            direction: 'd/f',
+            frameNumber: current.frameNumber,
+            displayFrame: current.displayFrame,
+            isCombined: true,
+            deltaDisplay: next.deltaDisplay || '',
+            delta: next.delta
+          };
+          merged.push(combined);
+          skipped.add(i + 1);
           continue;
         }
       }
