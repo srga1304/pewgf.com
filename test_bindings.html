@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Key Binding Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; }
+        .entry { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Key Binding Test</h1>
+    <p>Press keys to see if they're being captured:</p>
+    <div class="log" id="log"></div>
+    <button onclick="clearLog()">Clear</button>
+
+    <script src="js/utils.js"></script>
+    <script>
+        const log = document.getElementById('log');
+
+        window.addEventListener('keydown', (e) => {
+            const entry = document.createElement('div');
+            entry.className = 'entry';
+            const dir = keyboardEventToDirection(e.key);
+            entry.textContent = `[${new Date().toLocaleTimeString()}] keydown: "${e.key}" -> direction: ${dir || 'none'}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        });
+
+        function clearLog() {
+            log.innerHTML = '';
+        }
+    </script>
+</body>
+</html>

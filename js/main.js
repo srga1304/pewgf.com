@@ -20,7 +20,7 @@ class PEWGFTrainer {
     this.state.loadFromStorage();
     this.setupEventListeners();
     this.detectGamepad();
-    // Start with calibration instead of setup modal
+    // Start with calibration
     this.startCalibration();
   }
 
@@ -38,7 +38,7 @@ class PEWGFTrainer {
    */
   setupEventListeners() {
     // Calibration modal
-    this.ui.onSkipCalibrationClick(() => this.handleSkipCalibration());
+    this.ui.onSkipCalibrationClick(() => this.calibration.skip());
 
     // Practice area buttons
     this.ui.onResetClick(() => this.handleResetStats());
@@ -47,6 +47,9 @@ class PEWGFTrainer {
     // Gamepad connection events
     window.addEventListener('gamepadconnected', () => this.detectGamepad());
     window.addEventListener('gamepaddisconnected', () => this.detectGamepad());
+
+    // Initialize input handler immediately (before calibration)
+    this.inputHandler.initialize(CONSTANTS.DEVICES.KEYBOARD);
 
     // Input handler events
     this.inputHandler.on('direction', (event) => this.handleDirectionInput(event));
@@ -64,6 +67,8 @@ class PEWGFTrainer {
    * Start calibration routine
    */
   startCalibration() {
+    // Temporarily disable input processing during calibration
+    this.isTraining = false;
     this.calibration.start();
   }
 
@@ -78,9 +83,14 @@ class PEWGFTrainer {
     const device = hasGamepad ? CONSTANTS.DEVICES.GAMEPAD : CONSTANTS.DEVICES.KEYBOARD;
     this.state.setDevice(device);
     
-    // Initialize input handler with selected button 2 key
-    this.inputHandler.initialize(device);
-    this.inputHandler.setButton2Key(event.button2Key);
+    // Set all key bindings
+    const bindings = event.keyBindings;
+    this.inputHandler.setKeyBindings(bindings);
+    
+    // Switch device if gamepad detected
+    if (device === CONSTANTS.DEVICES.GAMEPAD) {
+      this.inputHandler.switchDevice(device);
+    }
     
     this.startTraining();
   }
@@ -96,9 +106,18 @@ class PEWGFTrainer {
     const device = hasGamepad ? CONSTANTS.DEVICES.GAMEPAD : CONSTANTS.DEVICES.KEYBOARD;
     this.state.setDevice(device);
     
-    // Initialize input handler with default spacebar
-    this.inputHandler.initialize(device);
-    this.inputHandler.setButton2Key(event?.button2Key || ' ');
+    // Set all key bindings (from event or defaults)
+    const bindings = event?.keyBindings || {
+      forward: 'd',
+      down: 's',
+      button2: ' '
+    };
+    this.inputHandler.setKeyBindings(bindings);
+    
+    // Switch device if gamepad detected
+    if (device === CONSTANTS.DEVICES.GAMEPAD) {
+      this.inputHandler.switchDevice(device);
+    }
     
     this.startTraining();
   }

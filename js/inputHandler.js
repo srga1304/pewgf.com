@@ -3,19 +3,30 @@ class InputHandler extends EventEmitter {
     super();
     this.device = CONSTANTS.DEVICES.KEYBOARD;
     this.calibrationOffset = 0;
-    this.button2Key = ' '; // Default to spacebar
+    
+    // Key bindings - only need forward, down, and button2
+    this.keyBindings = {
+      forward: 'd',
+      down: 's',
+      button2: ' '
+    };
+    
     this.pressedKeys = new Set();
     this.gamepadState = {};
     this.pollingHandle = null;
     this.lastGamepadState = {};
     this.lastEmittedDirection = null;
     this.keyDownTime = new Map(); // Track when each key was pressed
+    this.isInitialized = false; // Track initialization state
   }
 
   /**
    * Initialize input handler for specific device
    */
   initialize(device = CONSTANTS.DEVICES.KEYBOARD) {
+    if (this.isInitialized) return; // Prevent double initialization
+    
+    this.isInitialized = true;
     this.device = device;
     this.setupEventListeners();
 
@@ -36,27 +47,31 @@ class InputHandler extends EventEmitter {
    * Handle keyboard keydown
    */
   handleKeyDown(event) {
-    const key = event.key;
+    const key = event.key.toLowerCase();
     if (this.pressedKeys.has(key)) return; // Prevent repeat events
 
     const timestamp = performance.now();
 
     // Check if this is the button 2 key
-    if (key === this.button2Key) {
+    if (key === this.keyBindings.button2.toLowerCase()) {
       this.emit('button2', { timestamp });
       return;
     }
 
-    // Check if it's a direction key
-    const input = keyboardEventToDirection(key);
-    if (!input) return;
+    // Track which direction keys are pressed
+    if (key === this.keyBindings.forward.toLowerCase()) {
+      this.pressedKeys.add('forward');
+    } else if (key === this.keyBindings.down.toLowerCase()) {
+      this.pressedKeys.add('down');
+    } else {
+      return; // Unknown key
+    }
 
-    this.pressedKeys.add(key);
     this.keyDownTime.set(key, performance.now());
 
-    // Check for diagonal direction (d/f = down + forward)
-    const direction = this.getCurrentDirection();
-    if (direction && direction !== this.lastEmittedDirection) {
+    // Determine current direction from pressed keys
+    const direction = this.determineDirection();
+    if (direction !== this.lastEmittedDirection) {
       this.emit('direction', { direction, timestamp });
       this.lastEmittedDirection = direction;
     }
@@ -66,50 +81,46 @@ class InputHandler extends EventEmitter {
    * Handle keyboard keyup
    */
   handleKeyUp(event) {
-    const key = event.key;
-    this.pressedKeys.delete(key);
+    const key = event.key.toLowerCase();
     this.keyDownTime.delete(key);
 
+    // Update pressed keys based on bindings
+    if (key === this.keyBindings.forward.toLowerCase()) {
+      this.pressedKeys.delete('forward');
+    } else if (key === this.keyBindings.down.toLowerCase()) {
+      this.pressedKeys.delete('down');
+    }
+
     // Re-evaluate direction when key is released
-    const newDirection = this.getCurrentDirection();
+    const newDirection = this.determineDirection();
     if (newDirection !== this.lastEmittedDirection) {
       const timestamp = performance.now();
-      if (newDirection) {
-        this.emit('direction', { direction: newDirection, timestamp });
-      } else {
-        this.emit('direction', { direction: CONSTANTS.DIRECTIONS.NEUTRAL, timestamp });
-      }
+      this.emit('direction', { direction: newDirection, timestamp });
       this.lastEmittedDirection = newDirection;
     }
   }
 
   /**
-   * Get current direction from pressed keys
+   * Determine direction from currently pressed keys
    */
-  getCurrentDirection() {
-    let hasForward = false;
-    let hasBack = false;
-    let hasDown = false;
-    let hasUp = false;
+  determineDirection() {
+    const hasForward = this.pressedKeys.has('forward');
+    const hasDown = this.pressedKeys.has('down');
 
-    // Check for f/b/d/u in pressed keys
-    for (const key of this.pressedKeys) {
-      const dir = keyboardEventToDirection(key);
-      if (dir === CONSTANTS.DIRECTIONS.FORWARD) hasForward = true;
-      if (dir === CONSTANTS.DIRECTIONS.BACK) hasBack = true;
-      if (dir === CONSTANTS.DIRECTIONS.DOWN) hasDown = true;
-      if (dir === CONSTANTS.DIRECTIONS.UP) hasUp = true;
-    }
-
-    // Priority: diagonal > cardinal
+    // Combination takes priority
     if (hasDown && hasForward) return CONSTANTS.DIRECTIONS.DOWN_FORWARD;
-    if (hasDown && hasBack) return CONSTANTS.DIRECTIONS.DOWN_BACK;
     if (hasDown) return CONSTANTS.DIRECTIONS.DOWN;
     if (hasForward) return CONSTANTS.DIRECTIONS.FORWARD;
-    if (hasBack) return CONSTANTS.DIRECTIONS.BACK;
-    if (hasUp) return CONSTANTS.DIRECTIONS.UP;
 
+    // Nothing pressed = neutral
     return CONSTANTS.DIRECTIONS.NEUTRAL;
+  }
+
+  /**
+   * Get current direction from pressed keys (kept for backward compatibility)
+   */
+  getCurrentDirection() {
+    return this.determineDirection();
   }
 
   /**
@@ -235,10 +246,26 @@ class InputHandler extends EventEmitter {
   }
 
   /**
-   * Set button 2 key
+   * Set key bindings from calibration
+   */
+  setKeyBindings(bindings) {
+    if (bindings) {
+      this.keyBindings = {
+        forward: bindings.forward || 'd',
+        down: bindings.down || 's',
+        button2: bindings.button2 || ' '
+      };
+      // Clear pressed keys since bindings changed
+      this.pressedKeys.clear();
+      this.lastEmittedDirection = null;
+    }
+  }
+
+  /**
+   * Set button 2 key (kept for backward compatibility)
    */
   setButton2Key(key) {
-    this.button2Key = key || ' '; // Default to spacebar if not provided
+    this.keyBindings.button2 = key || ' '; // Default to spacebar if not provided
   }
 
   /**
@@ -252,6 +279,9 @@ class InputHandler extends EventEmitter {
    * Switch device type
    */
   switchDevice(device) {
+    // Only switch if device is different
+    if (this.device === device) return;
+    
     if (this.device === CONSTANTS.DEVICES.GAMEPAD) {
       this.stopGamepadPolling();
     }
@@ -259,6 +289,7 @@ class InputHandler extends EventEmitter {
     this.device = device;
     this.lastGamepadState = {};
     this.pressedKeys.clear();
+    this.lastEmittedDirection = null;
 
     if (device === CONSTANTS.DEVICES.GAMEPAD) {
       this.startGamepadPolling();
