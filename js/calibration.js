@@ -4,50 +4,42 @@ class CalibrationRoutine extends EventEmitter {
     this.ui = ui;
     this.isRunning = false;
     
-    // Store all key bindings
-    this.keyBindings = {
-      forward: null,
+    this.bindings = {
+      up: null,
       down: null,
+      left: null,
+      right: null,
       button2: null
     };
     
     this.currentStep = 0;
-    this.steps = ['forward', 'down', 'button2'];
+    this.steps = ['up', 'down', 'left', 'right', 'button2'];
     this.stepLabels = {
-      forward: 'Press Forward',
+      up: 'Press Up',
       down: 'Press Down',
+      left: 'Press Left',
+      right: 'Press Right',
       button2: 'Press Button 2 (Attack)'
     };
     
-    // Universal input handler (listening to all devices)
     this.keyboardDownHandler = null;
-    this.keyboardUpHandler = null;
-    this.gamepadPollingHandle = null;
-    this.lastGamepadState = {};
-    this.pressedKeys = new Set();
+    this.pollingHandle = null;
+    this.lastGamepadStates = {};
   }
 
   /**
-   * Start calibration - ask user to select all keys
+   * Start calibration - listen for any input device
    */
   start() {
     this.isRunning = true;
     this.currentStep = 0;
-    this.keyBindings = {
-      forward: null,
-      down: null,
-      button2: null
-    };
-    this.pressedKeys.clear();
-    this.lastGamepadState = {};
+    this.bindings = { up: null, down: null, left: null, right: null, button2: null };
+    this.lastGamepadStates = {};
     
     this.ui.showCalibrationModal();
     this.nextStep();
   }
 
-  /**
-   * Move to next calibration step
-   */
   nextStep() {
     if (this.currentStep >= this.steps.length) {
       this.finishCalibration();
@@ -58,103 +50,112 @@ class CalibrationRoutine extends EventEmitter {
     const label = this.stepLabels[stepName];
     
     this.ui.updateCalibrationStatus(label);
-    this.setupKeyListener(stepName);
+    this.listenForAnyInput(stepName);
   }
 
-  /**
-   * Setup listener for current step
-   */
-  setupKeyListener(stepName) {
-    // Remove old listeners
-    if (this.keyboardDownHandler) {
-      window.removeEventListener('keydown', this.keyboardDownHandler);
-    }
-    if (this.keyboardUpHandler) {
-      window.removeEventListener('keyup', this.keyboardUpHandler);
-    }
-
+  listenForAnyInput(stepName) {
+    // Listen for keyboard
     this.keyboardDownHandler = (event) => {
-      if (!this.isRunning) return;
-      
-      const key = event.key;
-      if (this.pressedKeys.has(key)) return;
-      
-      // Record key for this step
-      this.keyBindings[stepName] = key;
-      this.pressedKeys.add(key);
-      
-      // Flash and proceed
-      this.ui.flashMetronome();
-      this.ui.updateCalibrationStatus(`${this.stepLabels[stepName]} - Set to: ${key}`);
-      
-      // Move to next step after short delay
-      setTimeout(() => {
-        this.currentStep++;
-        this.pressedKeys.clear();
-        this.nextStep();
-      }, 500);
+      event.preventDefault();
+      const binding = {
+        device: 'keyboard',
+        type: 'key',
+        key: event.key.toLowerCase()
+      };
+      this.recordBinding(stepName, binding, event.key);
     };
-
-    this.keyboardUpHandler = (event) => {
-      this.pressedKeys.delete(event.key);
-    };
-
     window.addEventListener('keydown', this.keyboardDownHandler);
-    window.addEventListener('keyup', this.keyboardUpHandler);
+
+    // Poll for gamepad
+    const poll = () => {
+      if (!this.isRunning) return;
+      const gamepads = navigator.getGamepads?.() || [];
+      for (let i = 0; i < gamepads.length; i++) {
+        const gamepad = gamepads[i];
+        if (!gamepad) continue;
+
+        // Init state if not seen before
+        if (!this.lastGamepadStates[i]) {
+          this.lastGamepadStates[i] = { buttons: gamepad.buttons.map(b => b.pressed), axes: [...gamepad.axes] };
+        }
+
+        // Check buttons
+        for (let j = 0; j < gamepad.buttons.length; j++) {
+          if (gamepad.buttons[j].pressed && !this.lastGamepadStates[i].buttons[j]) {
+            const binding = { device: 'gamepad', id: gamepad.id, index: i, type: 'button', buttonIndex: j };
+            this.recordBinding(stepName, binding, `GP${i}-B${j}`);
+            return;
+          }
+        }
+
+        // Check axes
+        for (let j = 0; j < gamepad.axes.length; j++) {
+          const axisValue = gamepad.axes[j];
+          if (Math.abs(axisValue) > 0.8 && Math.abs(this.lastGamepadStates[i].axes[j]) < 0.5) {
+            const direction = axisValue > 0 ? '+' : '-';
+            const binding = { device: 'gamepad', id: gamepad.id, index: i, type: 'axis', axisIndex: j, direction };
+            this.recordBinding(stepName, binding, `GP${i}-A${j}${direction}`);
+            return;
+          }
+        }
+        
+        // Update last state
+        this.lastGamepadStates[i] = { buttons: gamepad.buttons.map(b => b.pressed), axes: [...gamepad.axes] };
+      }
+      this.pollingHandle = requestAnimationFrame(poll);
+    };
+    this.pollingHandle = requestAnimationFrame(poll);
   }
 
-  /**
-   * Remove input listeners
-   */
-  removeInputListener() {
+  recordBinding(stepName, binding, bindingLabel) {
+    this.stopListeners();
+    this.bindings[stepName] = binding;
+    
+    this.ui.flashMetronome();
+    this.ui.updateCalibrationStatus(`${this.stepLabels[stepName]} - Set to: ${bindingLabel}`);
+      
+    setTimeout(() => {
+      this.currentStep++;
+      this.nextStep();
+    }, 500);
+  }
+
+  stopListeners() {
     if (this.keyboardDownHandler) {
       window.removeEventListener('keydown', this.keyboardDownHandler);
+      this.keyboardDownHandler = null;
     }
-    if (this.keyboardUpHandler) {
-      window.removeEventListener('keyup', this.keyboardUpHandler);
-    }
-    if (this.gamepadPollingHandle) {
-      cancelAnimationFrame(this.gamepadPollingHandle);
+    if (this.pollingHandle) {
+      cancelAnimationFrame(this.pollingHandle);
+      this.pollingHandle = null;
     }
   }
 
-  /**
-   * Finish calibration
-   */
   finishCalibration() {
     this.isRunning = false;
-    this.removeInputListener();
-    
+    this.stopListeners();
     this.ui.hideCalibrationModal();
-    this.emit('complete', { 
-      keyBindings: this.keyBindings
-    });
+    this.emit('complete', { bindings: this.bindings });
   }
 
-  /**
-   * Skip calibration - use defaults
-   */
   skip() {
     this.isRunning = false;
-    this.removeInputListener();
-    
+    this.stopListeners();
     this.ui.hideCalibrationModal();
-    // Default keyboard bindings
+    
+    // Default to WASD + Space
     this.emit('skipped', { 
-      keyBindings: {
-        forward: 'd',
-        down: 's',
-        button2: ' '
+      bindings: {
+        up: { device: 'keyboard', type: 'key', key: 'w' },
+        down: { device: 'keyboard', type: 'key', key: 's' },
+        left: { device: 'keyboard', type: 'key', key: 'a' },
+        right: { device: 'keyboard', type: 'key', key: 'd' },
+        button2: { device: 'keyboard', type: 'key', key: ' ' },
       }
     });
   }
 
-  /**
-   * Get calibration results
-   */
   getResults() {
-    return {
-      keyBindings: this.keyBindings
-    };
+    return { bindings: this.bindings };
   }
 }

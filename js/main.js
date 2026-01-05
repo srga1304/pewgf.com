@@ -49,7 +49,7 @@ class PEWGFTrainer {
     window.addEventListener('gamepaddisconnected', () => this.detectGamepad());
 
     // Initialize input handler immediately (before calibration)
-    this.inputHandler.initialize(CONSTANTS.DEVICES.KEYBOARD);
+    this.inputHandler.initialize();
 
     // Input handler events
     this.inputHandler.on('direction', (event) => this.handleDirectionInput(event));
@@ -76,22 +76,10 @@ class PEWGFTrainer {
    * Handle calibration completion
    */
   handleCalibrationComplete(event) {
-    // Auto-detect device or use keyboard as default
-    const gamepads = navigator.getGamepads?.() || [];
-    const hasGamepad = Array.from(gamepads).some((gp) => gp && gp.connected);
-    
-    const device = hasGamepad ? CONSTANTS.DEVICES.GAMEPAD : CONSTANTS.DEVICES.KEYBOARD;
-    this.state.setDevice(device);
-    
-    // Set all key bindings
-    const bindings = event.keyBindings;
-    this.inputHandler.setKeyBindings(bindings);
-    
-    // Switch device if gamepad detected
-    if (device === CONSTANTS.DEVICES.GAMEPAD) {
-      this.inputHandler.switchDevice(device);
-    }
-    
+    // The new input handler is device-agnostic, just pass the bindings.
+    const { bindings } = event;
+    this.inputHandler.setBindings(bindings);
+    this.ui.setDeviceIndicator('Keyboard / Gamepad'); // Generic indicator
     this.startTraining();
   }
 
@@ -99,26 +87,10 @@ class PEWGFTrainer {
    * Handle calibration skip
    */
   handleCalibrationSkipped(event) {
-    // Auto-detect device or use keyboard as default
-    const gamepads = navigator.getGamepads?.() || [];
-    const hasGamepad = Array.from(gamepads).some((gp) => gp && gp.connected);
-    
-    const device = hasGamepad ? CONSTANTS.DEVICES.GAMEPAD : CONSTANTS.DEVICES.KEYBOARD;
-    this.state.setDevice(device);
-    
-    // Set all key bindings (from event or defaults)
-    const bindings = event?.keyBindings || {
-      forward: 'd',
-      down: 's',
-      button2: ' '
-    };
-    this.inputHandler.setKeyBindings(bindings);
-    
-    // Switch device if gamepad detected
-    if (device === CONSTANTS.DEVICES.GAMEPAD) {
-      this.inputHandler.switchDevice(device);
-    }
-    
+    // The new input handler is device-agnostic, just pass the bindings.
+    const { bindings } = event;
+    this.inputHandler.setBindings(bindings);
+    this.ui.setDeviceIndicator('Keyboard / Gamepad'); // Generic indicator
     this.startTraining();
   }
 
@@ -157,58 +129,53 @@ class PEWGFTrainer {
     if (now - this.lastAttemptTime < this.attemptCooldown) {
       return; // Prevent spam
     }
+    this.lastAttemptTime = now;
 
-    const { timestamp } = event;
-    this.inputBuffer.recordButton2(timestamp);
+    const { timestamp: button2_timestamp } = event;
+    this.inputBuffer.recordButton2(button2_timestamp);
 
-    // Check for sequence match using buffer state
     const bufferState = this.inputBuffer.getState();
     const recognition = this.sequenceRecognizer.recognizeSequenceFromBuffer(bufferState);
 
-    if (!recognition.detected) {
-      // Wrong sequence or not ready
-      this.ui.showResult(CONSTANTS.TYPES.MISS, 0);
-      this.state.recordAttempt({
-        type: CONSTANTS.TYPES.MISS,
-        delta: 0
-      });
-      this.inputBuffer.clear();
-      this.lastAttemptTime = now;
-      return;
+    let finalMoveType = CONSTANTS.TYPES.MISS;
+    let finalDelta = 0;
+
+    if (recognition.detected && recognition.d_f_timestamp) {
+      const { type: motionType, d_f_timestamp } = recognition;
+      
+      const timing = this.timingClassifier.classify(d_f_timestamp, button2_timestamp);
+      finalDelta = timing.delta;
+
+      // Determine final move type based on motion and timing
+      switch (timing.type) {
+        case CONSTANTS.TYPES.JUST_FRAME:
+          finalMoveType = (motionType === CONSTANTS.TYPES.PEWGF_MOTION)
+            ? CONSTANTS.TYPES.PEWGF
+            : CONSTANTS.TYPES.EWGF;
+          break;
+        case CONSTANTS.TYPES.LATE:
+          finalMoveType = CONSTANTS.TYPES.WGF;
+          break;
+        case CONSTANTS.TYPES.EARLY:
+        default:
+          finalMoveType = CONSTANTS.TYPES.MISS;
+          break;
+      }
     }
 
-    // Get d/f timestamp from recognition result
-    const d_f_timestamp = recognition.d_f_timestamp;
-    const button2_timestamp = timestamp;
-
-    if (!d_f_timestamp) {
-      this.ui.showResult(CONSTANTS.TYPES.MISS, 0);
-      this.state.recordAttempt({
-        type: CONSTANTS.TYPES.MISS,
-        delta: 0
-      });
-      this.inputBuffer.clear();
-      this.lastAttemptTime = now;
-      return;
-    }
-
-    // Classify
-    const classification = this.timingClassifier.classify(d_f_timestamp, button2_timestamp);
-
-    // Show result
+    // Show result in UI
     const sequence = this.inputBuffer.getSequence();
-    this.ui.showResult(classification.type, classification.delta);
-    this.ui.updateTimeline(sequence, classification.delta);
+    this.ui.showResult(finalMoveType, finalDelta);
+    this.ui.updateTimeline(sequence, finalDelta);
 
-    // Record attempt
+    // Record attempt for stats
     this.state.recordAttempt({
-      type: classification.type,
-      delta: classification.delta
+      type: finalMoveType,
+      delta: finalDelta
     });
 
     // Clear for next attempt
     this.inputBuffer.clear();
-    this.lastAttemptTime = now;
   }
 
   /**

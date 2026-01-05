@@ -1,12 +1,7 @@
 // Constants
 const CONSTANTS = {
   // Input timing windows (ms)
-  MISS_THRESHOLD_MIN: 5.84,
-  MISS_THRESHOLD_MAX: 27.5,
-  EWGF_THRESHOLD_MIN: 5.84,
-  EWGF_THRESHOLD_MAX: 27.5,
-  PEWGF_THRESHOLD_MIN: 11.67,
-  PEWGF_THRESHOLD_MAX: 21.67,
+  JUST_FRAME_WINDOW_MS: 1000 / 60, // 16.67ms, the window for a 'just frame' input
 
   // Frame reference
   FPS_60_FRAME_MS: 1000 / 60, // 16.67ms
@@ -20,7 +15,13 @@ const CONSTANTS = {
     MISS: 'Miss',
     WGF: 'WGF',
     EWGF: 'EWGF',
-    PEWGF: 'PEWGF'
+    PEWGF: 'PEWGF',
+    // New types for refactoring
+    EWGF_MOTION: 'EWGF_MOTION',
+    PEWGF_MOTION: 'PEWGF_MOTION',
+    JUST_FRAME: 'JUST_FRAME',
+    LATE: 'LATE',
+    EARLY: 'EARLY'
   },
 
   // Device types
@@ -38,13 +39,15 @@ const CONSTANTS = {
 
   // Directions
   DIRECTIONS: {
-    FORWARD: 'f',
-    NEUTRAL: 'n',
-    DOWN: 'd',
-    DOWN_FORWARD: 'd/f',
     UP: 'u',
+    DOWN: 'd',
+    FORWARD: 'f',
     BACK: 'b',
-    DOWN_BACK: 'd/b'
+    UP_FORWARD: 'u/f',
+    UP_BACK: 'u/b',
+    DOWN_FORWARD: 'd/f',
+    DOWN_BACK: 'd/b',
+    NEUTRAL: 'n'
   },
 
   // Keyboard mappings for directions only
@@ -86,9 +89,21 @@ const CONSTANTS = {
 };
 
 // Direction sequence for target motion
-const TARGET_SEQUENCE = [
+const EWGF_SEQUENCE = [
   CONSTANTS.DIRECTIONS.FORWARD,
   CONSTANTS.DIRECTIONS.NEUTRAL,
+  CONSTANTS.DIRECTIONS.DOWN,
+  CONSTANTS.DIRECTIONS.DOWN_FORWARD
+];
+
+const PEWGF_SEQUENCE = [
+  CONSTANTS.DIRECTIONS.FORWARD,
+  CONSTANTS.DIRECTIONS.NEUTRAL,
+  CONSTANTS.DIRECTIONS.DOWN_FORWARD
+];
+
+const PEWGF_ALT_SEQUENCE = [
+  CONSTANTS.DIRECTIONS.FORWARD,
   CONSTANTS.DIRECTIONS.DOWN,
   CONSTANTS.DIRECTIONS.DOWN_FORWARD
 ];

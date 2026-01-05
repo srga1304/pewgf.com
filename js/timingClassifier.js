@@ -10,7 +10,7 @@ class TimingClassifier {
   classify(d_f_timestamp, button2_timestamp) {
     if (!d_f_timestamp || !button2_timestamp) {
       return {
-        type: CONSTANTS.TYPES.MISS,
+        type: CONSTANTS.TYPES.MISS, // Should be handled as a motion error, but fallback
         delta: 0,
         frames: 0
       };
@@ -18,30 +18,14 @@ class TimingClassifier {
 
     const delta = button2_timestamp - d_f_timestamp;
     const frames = Timing.deltaToFrames(delta);
+    let type;
 
-    let type = CONSTANTS.TYPES.MISS;
-
-    // Check PEWGF first (most strict)
-    if (
-      delta >= CONSTANTS.PEWGF_THRESHOLD_MIN &&
-      delta <= CONSTANTS.PEWGF_THRESHOLD_MAX
-    ) {
-      type = CONSTANTS.TYPES.PEWGF;
-    }
-    // Check EWGF
-    else if (
-      delta >= CONSTANTS.EWGF_THRESHOLD_MIN &&
-      delta <= CONSTANTS.EWGF_THRESHOLD_MAX
-    ) {
-      type = CONSTANTS.TYPES.EWGF;
-    }
-    // Check WGF (late input)
-    else if (delta > CONSTANTS.MISS_THRESHOLD_MAX) {
-      type = CONSTANTS.TYPES.WGF;
-    }
-    // Miss (too early or invalid)
-    else {
-      type = CONSTANTS.TYPES.MISS;
+    if (delta < 0) {
+      type = CONSTANTS.TYPES.EARLY; // Button pressed before d/f
+    } else if (delta < CONSTANTS.JUST_FRAME_WINDOW_MS) {
+      type = CONSTANTS.TYPES.JUST_FRAME; // Pressed within the same frame
+    } else {
+      type = CONSTANTS.TYPES.LATE; // Pressed after the just frame window
     }
 
     this.lastClassification = {
@@ -64,7 +48,7 @@ class TimingClassifier {
    * Check if classification is successful
    */
   isSuccess(type) {
-    return type !== CONSTANTS.TYPES.MISS;
+    return type === CONSTANTS.TYPES.JUST_FRAME;
   }
 
   /**
@@ -72,10 +56,13 @@ class TimingClassifier {
    */
   getDescription(type) {
     const descriptions = {
-      [CONSTANTS.TYPES.MISS]: 'Timing missed. Too early or too late.',
-      [CONSTANTS.TYPES.WGF]: 'Wind God Fist. Input recognized but not just-frame.',
-      [CONSTANTS.TYPES.EWGF]: 'Electric Wind God Fist. Just-frame executed.',
-      [CONSTANTS.TYPES.PEWGF]: 'Perfect Electric Wind God Fist. Strict just-frame.'
+      [CONSTANTS.TYPES.MISS]: 'Timing missed. Incorrect motion.',
+      [CONSTANTS.TYPES.WGF]: 'Wind God Fist. Input was too late.',
+      [CONSTANTS.TYPES.EWGF]: 'Electric Wind God Fist. Just-frame executed!',
+      [CONSTANTS.TYPES.PEWGF]: 'Perfect Electric Wind God Fist. Just-frame on a shorter motion!',
+      [CONSTANTS.TYPES.EARLY]: 'Timing missed. Button was pressed too early.',
+      [CONSTANTS.TYPES.LATE]: 'Wind God Fist. Button was pressed too late.',
+      [CONSTANTS.TYPES.JUST_FRAME]: 'Just Frame! Perfect timing.'
     };
 
     return descriptions[type] || 'Unknown';

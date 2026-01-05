@@ -1,83 +1,77 @@
 class SequenceRecognizer {
   constructor() {
-    this.targetSequence = TARGET_SEQUENCE;
     this.lastRecognizedSequenceTime = 0;
   }
 
   /**
    * Check if the given sequence matches target motion from buffer state
-   * Returns { detected: bool, d_f_timestamp: number | null, matchIndex: number }
+   * Returns { detected: bool, d_f_timestamp: number | null, matchIndex: number, type: string | null }
    */
   recognizeSequenceFromBuffer(bufferState) {
     if (!bufferState || !bufferState.directions || bufferState.directions.length === 0) {
-      return { detected: false, d_f_timestamp: null, matchIndex: -1 };
+      return { detected: false, d_f_timestamp: null, matchIndex: -1, type: null };
     }
 
     const directions = bufferState.directions;
-    const targetLength = this.targetSequence.length;
 
-    if (directions.length < targetLength) {
-      return { detected: false, d_f_timestamp: null, matchIndex: -1 };
+    // Check for EWGF sequence first (longest)
+    const ewgfMatch = this.findSequence(directions, EWGF_SEQUENCE);
+    if (ewgfMatch.detected) {
+      const d_f_timestamp = this.findDownForwardTimestamp(directions, ewgfMatch.matchIndex + 3);
+      return { ...ewgfMatch, d_f_timestamp, type: CONSTANTS.TYPES.EWGF_MOTION };
     }
 
-    // Check last N entries
-    let matchIndex = -1;
-    let detected = false;
+    // Check for PEWGF sequence (f, n, d/f)
+    const pewgfMatch = this.findSequence(directions, PEWGF_SEQUENCE);
+    if (pewgfMatch.detected) {
+      const d_f_timestamp = this.findDownForwardTimestamp(directions, pewgfMatch.matchIndex + 2);
+      return { ...pewgfMatch, d_f_timestamp, type: CONSTANTS.TYPES.PEWGF_MOTION };
+    }
 
-    // Look for the sequence in the last positions
+    // Check for alternate PEWGF sequence (f, d, d/f)
+    const pewgfAltMatch = this.findSequence(directions, PEWGF_ALT_SEQUENCE);
+    if (pewgfAltMatch.detected) {
+      const d_f_timestamp = this.findDownForwardTimestamp(directions, pewgfAltMatch.matchIndex + 2);
+      return { ...pewgfAltMatch, d_f_timestamp, type: CONSTANTS.TYPES.PEWGF_MOTION };
+    }
+    
+    return { detected: false, d_f_timestamp: null, matchIndex: -1, type: null };
+  }
+
+  /**
+   * Find a sequence within the buffer
+   */
+  findSequence(directions, targetSequence) {
+    const targetLength = targetSequence.length;
+    if (directions.length < targetLength) {
+      return { detected: false, matchIndex: -1 };
+    }
+
     for (let i = directions.length - targetLength; i >= 0; i--) {
       let matches = true;
       for (let j = 0; j < targetLength; j++) {
-        if (directions[i + j].direction !== this.targetSequence[j]) {
+        if (directions[i + j].direction !== targetSequence[j]) {
           matches = false;
           break;
         }
       }
       if (matches) {
-        matchIndex = i;
-        detected = true;
-        break;
+        return { detected: true, matchIndex: i };
       }
     }
-
-    // Get d/f timestamp
-    let d_f_timestamp = null;
-    if (detected && matchIndex >= 0) {
-      // d/f should be at position matchIndex + 3 (after f, n, d)
-      for (let i = matchIndex + 3; i < directions.length; i++) {
-        if (directions[i].direction === CONSTANTS.DIRECTIONS.DOWN_FORWARD) {
-          d_f_timestamp = directions[i].timestamp;
-          break;
-        }
-      }
-    }
-
-    return {
-      detected,
-      d_f_timestamp,
-      matchIndex
-    };
+    return { detected: false, matchIndex: -1 };
   }
-
+  
   /**
-   * Legacy method for backward compatibility
+   * Find the timestamp of the d/f input after a given index
    */
-  recognizeSequence(sequence) {
-    if (!Array.isArray(sequence)) {
-      return { detected: false, d_f_timestamp: null };
+  findDownForwardTimestamp(directions, startIndex) {
+    for (let i = startIndex; i < directions.length; i++) {
+      if (directions[i].direction === CONSTANTS.DIRECTIONS.DOWN_FORWARD) {
+        return directions[i].timestamp;
+      }
     }
-
-    if (sequence.length < this.targetSequence.length) {
-      return { detected: false, d_f_timestamp: null };
-    }
-
-    const lastN = sequence.slice(-this.targetSequence.length);
-    const matches = lastN.every((dir, index) => dir === this.targetSequence[index]);
-
-    return {
-      detected: matches,
-      d_f_timestamp: null // Should be filled from buffer
-    };
+    return null;
   }
 
   /**
@@ -85,12 +79,5 @@ class SequenceRecognizer {
    */
   reset() {
     this.lastRecognizedSequenceTime = 0;
-  }
-
-  /**
-   * Get target sequence
-   */
-  getTargetSequence() {
-    return [...this.targetSequence];
   }
 }
