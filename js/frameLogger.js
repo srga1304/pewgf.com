@@ -62,7 +62,7 @@ class FrameLogger {
    * Clear all recorded frames
    */
   clear() {
-    this.frameMap.clear();
-    this.sessionStartTime = performance.now();
+   this.frameMap.clear();
+   // DO NOT reset sessionStartTime - keep it for consistent frame numbering
   }
 }

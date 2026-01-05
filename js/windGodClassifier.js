@@ -55,10 +55,14 @@ class WindGodClassifier {
     console.log('[WG-DEBUG] DF===Button2?', dfFrame === button2Frame);
     if (dfFrame !== button2Frame) {
       // DF and 2 in different frames → WGF only
-      const totalFrames = button2Frame - fFrame + 1;
-      const df2Frames = button2Frame - dfFrame;
+      const fFrameNum = timeline[fFrame].frameNumber;
+      const dfFrameNum = timeline[dfFrame].frameNumber;
+      const button2FrameNum = timeline[button2Frame].frameNumber;
+      const inputFrames = dfFrameNum - fFrameNum + 1;
+      const totalFrames = button2FrameNum - fFrameNum + 1;
+      const df2Frames = button2FrameNum - dfFrameNum;
       console.log('[WG-DEBUG] Different frames - WGF');
-      return this._result('WGF', totalFrames, df2Frames, 0.4);
+      return this._result('WGF', totalFrames, df2Frames, 0.4, inputFrames);
     }
 
     // Step 5: Validate sequence structure (F → (N or D) → DF)
@@ -69,9 +73,9 @@ class WindGodClassifier {
       return this._result('Miss', 0, -1, 0);
     }
 
-    // Step 6: Count input frames from F to DF+2
-    // Total frames = input_frames + startup_frames (11)
-    // This determines PEWGF (=2 input frames) vs EWGF (>2 input frames)
+    // Step 6: Count actual frame numbers from F to DF+2
+    // totalFrames = difference in frame numbers + startup (11)
+    // This determines PEWGF (13 total) vs EWGF (>13 total)
     // DF and 2 are guaranteed to be in same frame (electric confirmed)
     const fFrameNum = timeline[fFrame].frameNumber;
     const dfFrameNum = timeline[dfFrame].frameNumber;
@@ -89,14 +93,14 @@ class WindGodClassifier {
     
     if (inputFrames === 2) {
       console.log('[WG-DEBUG] PEWGF - 2 input frames (ideal)');
-      return this._result('PEWGF', totalFrames, 0, 1.0);
+      return this._result('PEWGF', totalFrames, 0, 1.0, inputFrames);
     } else if (inputFrames > 2) {
       console.log('[WG-DEBUG] EWGF - ', inputFrames, ' input frames (', totalFrames, ' total)');
-      return this._result('EWGF', totalFrames, 0, 0.9);
+      return this._result('EWGF', totalFrames, 0, 0.9, inputFrames);
     } else {
       // Less than 2 input frames = impossible (need at least F and DF)
       console.log('[WG-DEBUG] MISS - invalid input frames (', inputFrames, ')');
-      return this._result('Miss', totalFrames, -1, 0);
+      return this._result('Miss', totalFrames, -1, 0, inputFrames);
     }
   }
 
@@ -181,10 +185,11 @@ class WindGodClassifier {
   /**
    * Create result object
    */
-  _result(type, totalFrames, df2Frame, confidence) {
+  _result(type, totalFrames, df2Frame, confidence, inputFrames = 0) {
     const result = {
       type,
       totalFrames,
+      inputFrames, // Input frames (F to DF+2)
       df2Frame, // Frames between DF and button 2 (0 if same frame)
       confidence
     };

@@ -47,8 +47,8 @@ class UI {
       statEWGFPercent: DOM.query('#statEWGFPercent'),
       statPEWGF: DOM.query('#statPEWGF'),
       statPEWGFPercent: DOM.query('#statPEWGFPercent'),
-      statAvgDelta: DOM.query('#statAvgDelta'),
-      statStdDev: DOM.query('#statStdDev'),
+      statLastFrames: DOM.query('#statLastFrames'),
+      statAvgFrames: DOM.query('#statAvgFrames'),
       progressBars: DOM.query('#progressBars'),
 
       // History panel
@@ -265,8 +265,14 @@ class UI {
     DOM.setText(this.elements.statEWGFPercent, `${round(stats.ewgfRate)}%`);
     DOM.setText(this.elements.statPEWGF, stats.pewgf);
     DOM.setText(this.elements.statPEWGFPercent, `${round(stats.pewgfRate)}%`);
-    DOM.setText(this.elements.statAvgDelta, `${round(stats.avgDelta)}ms`);
-    DOM.setText(this.elements.statStdDev, `${round(stats.stdDev)}ms`);
+    
+    // Last frames - show only if last attempt was PEWGF or EWGF
+    const lastFramesText = stats.lastTotalFrames !== null ? `${round(stats.lastTotalFrames, 0)}f` : '-';
+    DOM.setText(this.elements.statLastFrames, lastFramesText);
+    
+    // Average frames
+    const avgFramesText = stats.avgTotalFrames > 0 ? `${round(stats.avgTotalFrames, 0)}f` : '-';
+    DOM.setText(this.elements.statAvgFrames, avgFramesText);
 
     this.updateProgressBars(stats.recent);
   }

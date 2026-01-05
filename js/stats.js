@@ -11,6 +11,8 @@ class Statistics {
     const record = {
       type: attemptData.type,
       delta: attemptData.delta,
+      totalFrames: attemptData.totalFrames || 0,
+      sequenceFrames: attemptData.sequenceFrames || 0,
       timestamp: performance.now(),
       sessionId: this.sessionId
     };
@@ -124,9 +126,32 @@ class Statistics {
   }
 
   /**
+   * Get last attempt
+   */
+  getLastAttempt() {
+    if (this.attempts.length === 0) return null;
+    return this.attempts[this.attempts.length - 1];
+  }
+
+  /**
+   * Get average total frames (including startup) - only for PEWGF/EWGF
+   */
+  getAverageTotalFrames() {
+    const validAttempts = this.attempts.filter(a => 
+      a.type === CONSTANTS.TYPES.PEWGF || a.type === CONSTANTS.TYPES.EWGF
+    );
+    if (validAttempts.length === 0) return 0;
+    const sum = validAttempts.reduce((acc, a) => acc + (a.totalFrames || 0), 0);
+    return sum / validAttempts.length;
+  }
+
+  /**
    * Get summary stats object
    */
   getSummary() {
+    const lastAttempt = this.getLastAttempt();
+    const lastIsValid = lastAttempt && (lastAttempt.type === CONSTANTS.TYPES.PEWGF || lastAttempt.type === CONSTANTS.TYPES.EWGF);
+    
     return {
       total: this.getTotalAttempts(),
       miss: this.getCountByType(CONSTANTS.TYPES.MISS),
@@ -139,6 +164,8 @@ class Statistics {
       pewgfRate: this.getPEWGFRate(),
       avgDelta: this.getAverageDelta(),
       stdDev: this.getStdDev(),
+      lastTotalFrames: lastIsValid ? lastAttempt.totalFrames : null,
+      avgTotalFrames: this.getAverageTotalFrames(),
       movingAvg: this.getMovingAverage(),
       recent: this.getRecentAttempts()
     };

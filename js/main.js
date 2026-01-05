@@ -170,18 +170,40 @@ class PEWGFTrainer {
     const classification = this.windGodClassifier.classify(timeline);
     
     let finalMoveType = classification.type;
+
+    // Calculate delta: difference between DF frame and button2 frame in milliseconds
     let finalDelta = 0;
+    if (timeline.length >= 2) {
+      const lastFrame = timeline[timeline.length - 1]; // Last frame with button2
+      // Find the DF direction frame
+      let dfFrame = -1;
+      for (let i = timeline.length - 1; i >= 0; i--) {
+        if (timeline[i].directions.includes('d/f')) {
+          dfFrame = timeline[i].frameNumber;
+          break;
+        }
+      }
+      if (dfFrame >= 0) {
+        // Calculate frame difference in milliseconds
+        const frameDiff = lastFrame.frameNumber - dfFrame;
+        finalDelta = frameDiff * CONSTANTS.FPS_60_FRAME_MS;
+      }
+    }
 
     // Show result in UI
     const sequence = this.inputBuffer.getSequence();
     this.ui.showResult(finalMoveType, finalDelta);
     this.ui.updateTimeline(sequence, finalDelta);
 
+    // Use inputFrames from classification (already correctly calculated)
+    const sequenceFrames = classification.inputFrames || 0;
+
     // Record attempt for stats
     this.state.recordAttempt({
       type: finalMoveType,
       delta: finalDelta,
-      frames: classification.totalFrames
+      totalFrames: classification.totalFrames,
+      sequenceFrames: sequenceFrames
     });
 
     // Debug log
