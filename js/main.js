@@ -7,7 +7,9 @@ class PEWGFTrainer {
     this.sequenceRecognizer = new SequenceRecognizer();
     this.timingClassifier = new TimingClassifier();
     this.frameLogger = new FrameLogger();
-    this.windGodClassifier = new WindGodClassifier();
+    this.electricSound = new Audio('electric.ogg');
+    this.electricSound.preload = 'auto';
+    this.windGodClassifier = new WindGodClassifier(this.electricSound);
     this.inputHistory = new InputHistory();
     this.calibration = new CalibrationRoutine(this.ui);
 
@@ -171,8 +173,9 @@ class PEWGFTrainer {
     
     // Play sound if EWGF/PEWGF
     if (classification.type === 'EWGF' || classification.type === 'PEWGF') {
-      const electricSound = new Audio('electric.ogg');
-      electricSound.play().catch(err => console.warn('Audio playback failed:', err));
+      this.electricSound.pause(); // Stop any currently playing sound
+      this.electricSound.currentTime = 0; // Rewind to the beginning
+      this.electricSound.play().catch(err => console.warn('Audio playback failed:', err));
     }
 
     let finalMoveType = classification.type;
