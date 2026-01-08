@@ -116,7 +116,7 @@ D-Pad Up = up
 D-Pad Left = left
 D-Pad Down = down
 D-Pad Right = right
-Button 1 (A/Cross) = button 2
+Button 2 (Y/Triangle) = button 2
 ```
 
 **Output**: Normalized `{ direction: string, timestamp: DOMHighResTimeStamp }`
