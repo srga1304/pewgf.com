@@ -23,7 +23,15 @@ class InputHandler extends EventEmitter {
     
     window.addEventListener('keydown', (e) => {
       e.preventDefault();
-      this.keyboardPressedKeys.add(e.key.toLowerCase());
+      const key = e.key.toLowerCase();
+      
+      // Handle rising edge for keyboard button 2 press
+      if (!this.keyboardPressedKeys.has(key)) {
+        if (this.bindings.button2?.device === 'keyboard' && this.bindings.button2?.key === key) {
+          this.emit('button2', { timestamp: performance.now() });
+        }
+      }
+      this.keyboardPressedKeys.add(key);
     });
     window.addEventListener('keyup', (e) => {
       e.preventDefault();
@@ -72,7 +80,10 @@ class InputHandler extends EventEmitter {
 
       let isActive = false;
       if (binding.device === 'keyboard') {
-        isActive = this.keyboardPressedKeys.has(binding.key);
+        // Keyboard state is read directly for directional inputs
+        if (logicalAction !== 'button2') {
+          isActive = this.keyboardPressedKeys.has(binding.key);
+        }
       } else if (binding.device === 'gamepad') {
         const gamepad = gamepads[binding.index];
         if (gamepad) {
@@ -101,10 +112,13 @@ class InputHandler extends EventEmitter {
       this.lastEmittedDirection = currentDirection;
     }
 
-    // Button2 event (rising edge)
+    // Button2 event (rising edge) for GAMEPAD ONLY
     const isButton2Pressed = this.logicalPressedKeys.has('button2');
     if (isButton2Pressed && !this.wasButton2Pressed) {
-      this.emit('button2', { timestamp: performance.now() });
+      const binding = this.bindings.button2;
+      if (binding && binding.device === 'gamepad') {
+        this.emit('button2', { timestamp: performance.now() });
+      }
     }
     this.wasButton2Pressed = isButton2Pressed;
   }

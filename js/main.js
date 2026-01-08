@@ -7,7 +7,9 @@ class PEWGFTrainer {
     this.sequenceRecognizer = new SequenceRecognizer();
     this.timingClassifier = new TimingClassifier();
     this.frameLogger = new FrameLogger();
-    this.windGodClassifier = new WindGodClassifier();
+    this.electricSound = new Audio('electric.ogg');
+    this.electricSound.preload = 'auto';
+    this.windGodClassifier = new WindGodClassifier(this.electricSound);
     this.inputHistory = new InputHistory();
     this.calibration = new CalibrationRoutine(this.ui);
 
@@ -169,6 +171,12 @@ class PEWGFTrainer {
     // Classify using frame-based logic
     const classification = this.windGodClassifier.classify(timeline);
     
+    // Play sound if EWGF/PEWGF
+    if (classification.type === 'EWGF' || classification.type === 'PEWGF') {
+      this.electricSound.currentTime = 0;
+      this.electricSound.play().catch(err => console.warn('Audio playback failed:', err));
+    }
+
     let finalMoveType = classification.type;
 
     // Calculate delta: difference between DF timestamp and button2 timestamp

@@ -9,8 +9,9 @@
  * - PEWGF: EWGF completed in ≤3 frames total (F to DF+2)
  */
 class WindGodClassifier {
-  constructor() {
+  constructor(electricSound) {
     this.lastClassification = null;
+    this.electricSound = electricSound;
   }
 
   /**
