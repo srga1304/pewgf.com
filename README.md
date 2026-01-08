@@ -11,14 +11,6 @@ A lightweight, browser-based tool for practicing and mastering the timing of Mis
 - **Device Support**: Works with both keyboard and standard gamepads. Includes a simple calibration routine to bind your preferred keys or buttons.
 - **Local Persistence**: Your statistics are automatically saved in your browser's `localStorage`, so your progress is preserved between sessions.
 
-## How to Use
-
-1.  **Open `index.html`**: Open the `index.html` file in a modern web browser (Chrome, Firefox, Edge, Safari).
-2.  **Calibrate Inputs**: On first launch, the application will ask you to press the keys/buttons for `Up`, `Down`, `Left`, `Right`, and `Attack`. Follow the on-screen prompts.
-3.  **Practice**: Once calibrated, the practice area will appear. Perform the motion (`f, n, d, d/f + 2`) and observe the feedback.
-4.  **Review**: Check the stats panel and input history to analyze your timing and consistency.
-5.  **Reset**: Click the "Reset" button to clear all statistics and start a fresh session.
-
 ## Technical Overview
 
 - **Frontend**: Vanilla JavaScript (ES6 Modules), HTML5, CSS3.
