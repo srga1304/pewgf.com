@@ -24,3 +24,5 @@ This tool provides a consistent environment for practice, but be aware of the fo
 - **Browser Jitter**: While `performance.now()` is highly precise, browser and operating system scheduling can introduce minor timing variations.
 - **Gamepad Polling**: The Gamepad API is polled, which can introduce a small amount of latency compared to event-driven keyboard inputs.
 - **Offline vs. Online**: The timing required for successful execution in an online match of Tekken will vary due to network latency (rollback netcode). This tool is best for building clean, consistent muscle memory in an offline context.
+  
+https://srga1304.github.io/pewgf.com/
